@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My To-Do List</title>
+    <link rel="stylesheet" href="ToDoList.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>My To-Do List</h1>
+            <p>Stay organized and get things done!</p>
+        </div>
+        
+        <div class="input-section">
+            <div class="input-container">
+                <input type="text" id="taskInput" placeholder="Add a new task..." maxlength="100">
+                <button id="addBtn">Add Task</button>
+            </div>
+            <div class="stats">
+                <span id="totalTasks">Total: 0</span>
+                <span id="completedTasks">Completed: 0</span>
+            </div>
+        </div>
+        
+        <div id="todoList" class="todo-list">
+            <div class="empty-state" id="emptyState">
+                <div style="font-size: 4rem; margin-bottom: 20px;">📝</div>
+                <h3>No tasks yet!</h3>
+                <p>Add a task above to get started with your productivity journey.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class TodoApp {
+            constructor() {
+                this.tasks = [];
+                this.taskIdCounter = 1;
+                this.initializeElements();
+                this.attachEventListeners();
+                this.updateStats();
+            }
+
+            initializeElements() {
+                this.taskInput = document.getElementById('taskInput');
+                this.addBtn = document.getElementById('addBtn');
+                this.todoList = document.getElementById('todoList');
+                this.emptyState = document.getElementById('emptyState');
+                this.totalTasksSpan = document.getElementById('totalTasks');
+                this.completedTasksSpan = document.getElementById('completedTasks');
+            }
+
+            attachEventListeners() {
+                this.addBtn.addEventListener('click', () => this.addTask());
+                
+                this.taskInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.addTask();
+                    }
+                });
+
+                this.taskInput.focus();
+            }
+
+            addTask() {
+                const taskText = this.taskInput.value.trim();
+                
+                if (taskText === '') {
+                    this.showInputError();
+                    return;
+                }
+
+                const task = {
+                    id: this.taskIdCounter++,
+                    text: taskText,
+                    completed: false,
+                    createdAt: new Date()
+                };
+
+                this.tasks.push(task);
+                this.renderTask(task);
+                this.taskInput.value = '';
+                this.updateStats();
+                this.hideEmptyState();
+                
+                this.addBtn.style.background = '#28a745';
+                setTimeout(() => {
+                    this.addBtn.style.background = 'linear-gradient(45deg, #667eea, #764ba2)';
+                }, 200);
+            }
+
+            renderTask(task) {
+                const taskElement = document.createElement('div');
+                taskElement.className = 'task-item';
+                taskElement.dataset.taskId = task.id;
+                
+                taskElement.innerHTML = `
+                    <div class="task-checkbox ${task.completed ? 'checked' : ''}"></div>
+                    <span class="task-text ${task.completed ? 'completed' : ''}">${this.escapeHtml(task.text)}</span>
+                    <button class="delete-btn">Delete</button>
+                `;
+
+                const checkbox = taskElement.querySelector('.task-checkbox');
+                const deleteBtn = taskElement.querySelector('.delete-btn');
+
+                checkbox.addEventListener('click', () => this.toggleTask(task.id));
+                deleteBtn.addEventListener('click', () => this.deleteTask(task.id));
+
+                this.todoList.appendChild(taskElement);
+            }
+
+            toggleTask(taskId) {
+                const task = this.tasks.find(t => t.id === taskId);
+                const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
+                
+                if (task && taskElement) {
+                    task.completed = !task.completed;
+                    
+                    const checkbox = taskElement.querySelector('.task-checkbox');
+                    const taskText = taskElement.querySelector('.task-text');
+                    
+                    if (task.completed) {
+                        checkbox.classList.add('checked');
+                        taskText.classList.add('completed');
+                        taskElement.classList.add('completed');
+                    } else {
+                        checkbox.classList.remove('checked');
+                        taskText.classList.remove('completed');
+                        taskElement.classList.remove('completed');
+                    }
+                    
+                    this.updateStats();
+                }
+            }
+
+            deleteTask(taskId) {
+                const taskElement = document.querySelector(`[data-task-id="${taskId}"]`);
+                
+                if (taskElement) {
+                    taskElement.classList.add('removing');
+                    
+                    setTimeout(() => {
+                        this.tasks = this.tasks.filter(t => t.id !== taskId);
+                        
+                        taskElement.remove();
+                        
+                        this.updateStats();
+                        
+                        if (this.tasks.length === 0) {
+                            this.showEmptyState();
+                        }
+                    }, 300);
+                }
+            }
+
+            updateStats() {
+                const total = this.tasks.length;
+                const completed = this.tasks.filter(t => t.completed).length;
+                
+                this.totalTasksSpan.textContent = `Total: ${total}`;
+                this.completedTasksSpan.textContent = `Completed: ${completed}`;
+            }
+
+            showEmptyState() {
+                this.emptyState.style.display = 'block';
+            }
+
+            hideEmptyState() {
+                this.emptyState.style.display = 'none';
+            }
+
+            showInputError() {
+                this.taskInput.style.borderColor = '#dc3545';
+                this.taskInput.placeholder = 'Please enter a task!';
+                
+                setTimeout(() => {
+                    this.taskInput.style.borderColor = '#e9ecef';
+                    this.taskInput.placeholder = 'Add a new task...';
+                }, 2000);
+            }
+
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new TodoApp();
+        });
+    </script>
+</body>
+</html>
